@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.cigionline.org)",
+      "WebFetch(domain:asiasociety.org)",
+      "WebFetch(domain:tao-hpu.medium.com)",
+      "WebFetch(domain:jamestown.org)"
     ]
   }
 }
