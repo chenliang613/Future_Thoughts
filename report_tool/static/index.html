@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>行业智能化分析报告工具</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app" v-cloak>
+
+  <!-- ═══ Header ═══ -->
+  <header class="header">
+    <span class="logo">📊 报告工具</span>
+    <span class="report-title">{{ currentProject ? currentProject.title : '请选择或新建报告' }}</span>
+    <div class="dirty-badge" v-if="isDirty">未保存</div>
+    <div class="header-actions">
+      <button class="btn btn-outline" @click="showImportModal = true">导入 MD</button>
+      <button class="btn btn-outline" @click="showNewProjectModal = true">新建报告</button>
+      <button class="btn btn-primary" @click="exportProject" :disabled="!currentProject">导出 MD</button>
+    </div>
+  </header>
+
+  <!-- ═══ Main Layout ═══ -->
+  <div class="main-layout">
+
+    <!-- Left: Project & Chapter Tree -->
+    <aside class="left-panel">
+      <div class="panel-section">
+        <div class="panel-label">报告列表</div>
+        <div
+          v-for="p in projects"
+          :key="p.id"
+          class="project-item"
+          :class="{ active: currentProject && currentProject.id === p.id }"
+          @click="selectProject(p.id)"
+        >
+          <span class="project-name">{{ p.title }}</span>
+          <span class="chapter-count">{{ p.chapter_count }}章</span>
+          <button class="icon-btn del-btn" @click.stop="confirmDeleteProject(p)" title="删除">×</button>
+        </div>
+        <div v-if="projects.length === 0" class="empty-hint">暂无报告，请导入或新建</div>
+      </div>
+
+      <div class="panel-section" v-if="currentProject">
+        <div class="panel-label">
+          章节目录
+          <button class="icon-btn" @click="showAddChapter = true" title="新增章节">＋</button>
+        </div>
+        <div id="chapter-list">
+          <div
+            v-for="chapter in sortedChapters"
+            :key="chapter.id"
+            class="chapter-item"
+            :class="{ active: currentChapter && currentChapter.id === chapter.id }"
+            :data-level="chapter.level"
+            :data-id="chapter.id"
+            @click="selectChapter(chapter)"
+          >
+            <span class="chapter-drag">⠿</span>
+            <span class="chapter-title-text">{{ chapter.title }}</span>
+            <button class="icon-btn del-btn" @click.stop="confirmDeleteChapter(chapter)" title="删除">×</button>
+          </div>
+        </div>
+
+        <!-- Add Chapter Form -->
+        <div v-if="showAddChapter" class="add-chapter-form">
+          <input v-model="newChapterTitle" placeholder="章节标题" class="input-sm" @keyup.enter="addChapter" />
+          <select v-model="newChapterLevel" class="input-sm">
+            <option :value="1">H1 一级</option>
+            <option :value="2">H2 二级</option>
+            <option :value="3">H3 三级</option>
+          </select>
+          <div class="form-actions">
+            <button class="btn btn-sm btn-primary" @click="addChapter">确认</button>
+            <button class="btn btn-sm" @click="showAddChapter = false">取消</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: Editor -->
+    <section class="editor-panel" v-if="currentChapter">
+      <div class="editor-toolbar">
+        <div class="chapter-breadcrumb">
+          <span>{{ currentProject.title }}</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>{{ currentChapter.title }}</span>
+        </div>
+        <div class="toolbar-right">
+          <div class="mode-tabs">
+            <span class="mode-tab" :class="{ active: editorMode === 'edit' }" @click="editorMode = 'edit'">编辑</span>
+            <span class="mode-tab" :class="{ active: editorMode === 'preview' }" @click="editorMode = 'preview'">预览</span>
+            <span class="mode-tab" :class="{ active: editorMode === 'split' }" @click="editorMode = 'split'">分屏</span>
+          </div>
+          <button class="btn btn-sm btn-primary" @click="saveChapter" :disabled="!isDirty">保存 (⌘S)</button>
+        </div>
+      </div>
+
+      <div class="editor-body" :class="'mode-' + editorMode">
+        <textarea
+          v-if="editorMode !== 'preview'"
+          class="md-editor"
+          v-model="editorContent"
+          placeholder="在此输入 Markdown 内容..."
+          @keydown.meta.s.prevent="saveChapter"
+          @keydown.ctrl.s.prevent="saveChapter"
+          spellcheck="false"
+        ></textarea>
+        <div
+          v-if="editorMode !== 'edit'"
+          class="md-preview"
+          v-html="renderedPreview"
+        ></div>
+      </div>
+
+      <!-- Tags & Meta -->
+      <div class="chapter-meta">
+        <div class="tag-area">
+          <span class="meta-label">标签：</span>
+          <span
+            v-for="tag in currentChapter.tags"
+            :key="tag"
+            class="tag"
+          >
+            {{ tag }}
+            <span class="tag-del" @click="removeTag(tag)">×</span>
+          </span>
+          <div class="add-tag-inline" v-if="showAddTag">
+            <input
+              v-model="newTag"
+              class="input-sm tag-input"
+              placeholder="输入标签..."
+              @keyup.enter="addTag"
+              @keyup.esc="showAddTag = false"
+              ref="tagInput"
+            />
+            <button class="btn btn-sm btn-primary" @click="addTag">+</button>
+          </div>
+          <button v-else class="btn btn-sm" @click="openAddTag">+ 标签</button>
+        </div>
+        <div class="meta-info">
+          H{{ currentChapter.level }} · 字数: {{ editorContent.length }}
+        </div>
+      </div>
+    </section>
+
+    <!-- Center: Empty state -->
+    <section class="editor-panel editor-empty" v-else>
+      <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <div>{{ currentProject ? '请在左侧选择章节开始编辑' : '请选择或新建报告' }}</div>
+      </div>
+    </section>
+
+    <!-- Right: Search Panel -->
+    <aside class="search-panel">
+      <div class="search-tabs">
+        <span class="search-tab" :class="{ active: searchTab === 'local' }" @click="searchTab = 'local'">本地</span>
+        <span class="search-tab" :class="{ active: searchTab === 'web' }" @click="searchTab = 'web'">联网</span>
+        <span class="search-tab" :class="{ active: searchTab === 'ai' }" @click="searchTab = 'ai'">AI生成</span>
+      </div>
+
+      <!-- Search Input -->
+      <div class="search-input-area" v-if="searchTab !== 'ai'">
+        <input
+          v-model="searchQuery"
+          class="search-input"
+          :placeholder="searchTab === 'local' ? '搜索本地内容...' : '联网搜索关键词...'"
+          @keyup.enter="runSearch"
+        />
+        <button class="btn btn-primary btn-sm" @click="runSearch" :disabled="isSearching">
+          {{ isSearching ? '搜索中...' : '搜索' }}
+        </button>
+      </div>
+
+      <!-- AI Generation Panel -->
+      <div class="ai-panel" v-if="searchTab === 'ai'">
+        <div class="ai-hint" v-if="!currentChapter">
+          <em>请先在左侧选择一个章节，然后使用 AI 为该章节生成内容</em>
+        </div>
+        <template v-else>
+          <div class="ai-chapter-name">为章节生成：<strong>{{ currentChapter.title }}</strong></div>
+          <textarea
+            v-model="aiContext"
+            class="ai-context-input"
+            placeholder="补充生成要求（可选）：例如"重点分析金融行业的挑战，包含数据和案例""
+          ></textarea>
+          <button class="btn btn-primary" @click="generateAiContent" :disabled="isGenerating" style="width:100%">
+            {{ isGenerating ? 'AI 生成中...' : '✨ AI 生成内容' }}
+          </button>
+
+          <div v-if="aiPreviewContent" class="ai-preview-area">
+            <div class="ai-preview-label">生成预览：</div>
+            <div class="ai-preview-content">{{ aiPreviewContent.slice(0, 500) }}{{ aiPreviewContent.length > 500 ? '…' : '' }}</div>
+            <div class="ai-preview-actions">
+              <button class="btn btn-sm btn-primary" @click="applyAiContent('replace')">替换内容</button>
+              <button class="btn btn-sm" @click="applyAiContent('append')">追加到末尾</button>
+              <button class="btn btn-sm" @click="aiPreviewContent = ''">丢弃</button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Error -->
+      <div class="search-error" v-if="searchError">{{ searchError }}</div>
+
+      <!-- Search Results -->
+      <div class="search-results" v-if="searchTab !== 'ai'">
+        <div class="results-count" v-if="searchResults.length > 0">
+          找到 {{ searchResults.length }} 条结果
+        </div>
+        <div class="no-results" v-else-if="hasSearched && !isSearching">无匹配结果</div>
+
+        <!-- Local Results -->
+        <template v-if="searchTab === 'local'">
+          <div
+            v-for="(r, i) in searchResults"
+            :key="i"
+            class="result-card"
+            @click="navigateToResult(r)"
+          >
+            <div class="result-title">{{ r.chapter_title }}</div>
+            <div class="result-project">{{ r.project_title }}</div>
+            <div class="result-excerpt">{{ r.excerpt }}</div>
+          </div>
+        </template>
+
+        <!-- Web Results -->
+        <template v-if="searchTab === 'web'">
+          <div v-for="(r, i) in searchResults" :key="i" class="result-card">
+            <div class="result-title">
+              <a :href="r.url" target="_blank" rel="noopener">{{ r.title }}</a>
+            </div>
+            <div class="result-url">{{ r.url }}</div>
+            <div class="result-excerpt">{{ r.snippet }}</div>
+            <div class="result-actions">
+              <button class="btn btn-sm" @click="insertWebRef(r)">插入引用</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ═══ Import Modal ═══ -->
+  <div class="modal-overlay" v-if="showImportModal" @click.self="showImportModal = false">
+    <div class="modal">
+      <div class="modal-title">导入 Markdown 文件</div>
+      <div class="modal-body">
+        <div class="upload-area" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleFileDrop">
+          <div class="upload-icon">📁</div>
+          <div>点击选择或拖拽 .md 文件到此处</div>
+          <input type="file" accept=".md" ref="fileInput" @change="handleFileSelect" style="display:none">
+        </div>
+        <div class="upload-progress" v-if="isImporting">正在解析文件...</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showImportModal = false">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ New Project Modal ═══ -->
+  <div class="modal-overlay" v-if="showNewProjectModal" @click.self="showNewProjectModal = false">
+    <div class="modal">
+      <div class="modal-title">新建报告</div>
+      <div class="modal-body">
+        <label class="form-label">报告标题</label>
+        <input v-model="newProjectTitle" class="input-full" placeholder="例如：行业智能化分析报告 2026" @keyup.enter="createProject" />
+        <label class="form-label" style="margin-top:12px">描述（可选）</label>
+        <textarea v-model="newProjectDesc" class="input-full" rows="3" placeholder="报告简介..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showNewProjectModal = false">取消</button>
+        <button class="btn btn-primary" @click="createProject" :disabled="!newProjectTitle.trim()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Global Toast ═══ -->
+  <div class="toast" v-if="toastMsg" :class="'toast-' + toastType">{{ toastMsg }}</div>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

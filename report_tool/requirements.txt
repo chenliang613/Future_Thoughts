@@ -1,0 +1,6 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+anthropic==0.40.0
+python-multipart==0.0.12
+duckduckgo-search==6.3.0
+python-dotenv==1.0.1
