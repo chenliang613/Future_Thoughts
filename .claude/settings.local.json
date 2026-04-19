@@ -6,7 +6,11 @@
       "WebFetch(domain:asiasociety.org)",
       "WebFetch(domain:tao-hpu.medium.com)",
       "WebFetch(domain:jamestown.org)",
-      "Skill(claude-developer-platform)"
+      "Skill(claude-developer-platform)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:red.anthropic.com)",
+      "WebFetch(domain:artificialintelligenceact.eu)",
+      "WebFetch(domain:www.resultsense.com)"
     ]
   }
 }
