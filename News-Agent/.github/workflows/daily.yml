@@ -1,0 +1,50 @@
+name: Daily News Push
+
+on:
+  schedule:
+    # 北京时间每天 08:00 = UTC 00:00。GitHub cron 可能有 5-15 分钟延迟
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 允许手动触发(在 Actions 页面)
+
+permissions:
+  contents: write  # 需要写权限,跑完要 commit state/sent.json 回去
+
+concurrency:
+  group: daily-news
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run news agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+        run: python -m news_agent.main
+
+      - name: Commit updated state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ -n "$(git status --porcelain state/)" ]]; then
+            git add state/sent.json
+            git commit -m "chore: update sent state $(date -u +%Y-%m-%d)"
+            git push
+          else
+            echo "no state change to commit"
+          fi

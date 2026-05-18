@@ -1,0 +1,70 @@
+# News Agent 配置文件
+# 编辑后无需重启，每次跑都会重新读
+
+# ---------- 推送配置 ----------
+push:
+  # 单次推送的文章数上限（Claude 摘要的 token 成本主要来自这里）
+  max_articles: 10
+  # 单条新闻的相关性分数阈值（0-10），低于此分不推送
+  min_score: 6.0
+  # PushPlus 推送主题模板（{date} 会被替换为日期）
+  title_template: "📰 行业智能化日报 {date}"
+
+# ---------- Claude API 配置 ----------
+claude:
+  # 批量打分用的快速模型（便宜，适合 triage）
+  scorer_model: "claude-haiku-4-5"
+  # 写中文摘要用的高质量模型
+  summarizer_model: "claude-sonnet-4-6"
+  # 每批送给 scorer 的文章数（控制单次请求 token 量）
+  scorer_batch_size: 20
+
+# ---------- Google News 关键词搜索 ----------
+# 这些关键词会被翻译成 Google News RSS URL 直接抓
+# 搜索窗口固定 24h，避免推荐过期内容
+google_news_queries:
+  - "行业大模型"
+  - "AI 落地 企业"
+  - "AI Agent 企业级"
+  - "industrial AI"
+  - "vertical AI agent"
+  - "enterprise AI deployment"
+  - "AI capex"
+
+# ---------- 直接订阅的 RSS 源 ----------
+# 推荐：行业媒体的 RSS（中英文混合，按需增删）
+rss_feeds:
+  # 中文科技/AI 媒体
+  - name: "36氪 AI"
+    url: "https://36kr.com/feed-newsflash"
+  - name: "机器之心"
+    url: "https://www.jiqizhixin.com/rss"
+  - name: "量子位"
+    url: "https://www.qbitai.com/feed"
+
+  # 英文 AI/产业媒体
+  - name: "The Verge AI"
+    url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+  - name: "MIT Tech Review AI"
+    url: "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+  - name: "Anthropic News"
+    url: "https://www.anthropic.com/news/rss.xml"
+
+# ---------- RSSHub 路由（用于 X / 微信公众号）----------
+# RSSHub 公共实例可能不稳定，如果想用 X 或公众号，建议自部署 RSSHub
+# 留空数组表示不启用
+# 示例路由：
+#   X 用户: /twitter/user/elonmusk
+#   公众号: /wechat/ce/{biz}  （需要 biz 参数，参考 docs.rsshub.app）
+rsshub:
+  instance: "https://rsshub.app"  # 也可以填自部署的 URL
+  routes: []
+  # - name: "Sam Altman X"
+  #   path: "/twitter/user/sama"
+
+# ---------- 去重配置 ----------
+state:
+  # 已推送文章记录保留天数（防止反复推同一篇）
+  retention_days: 30
