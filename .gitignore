@@ -1,0 +1,12 @@
+# Secrets / environment
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+report_tool/venv/
+
+# OS
+.DS_Store

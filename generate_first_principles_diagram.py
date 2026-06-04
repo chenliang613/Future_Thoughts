@@ -1,147 +1,110 @@
-"""生成"行业智能化第一性原理"信息图（v2 - 标杆 → 标准化 → 规模复制）"""
+"""生成"行业智能化第一性原理"信息图（v3 - 五条第一性原理）
+
+内容与《行业智能化发展第一性原理.md》保持一致：
+① 价值守恒  ② 行业知识密度  ③ 标杆-规模化路径  ④ 场景可批量复制  ⑤ 边际成本递减
+共同支撑「倒金字塔」产业终局：应用层捕获 100 倍价值。
+"""
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Rectangle
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 from matplotlib import rcParams
 
 rcParams['font.sans-serif'] = ['Hiragino Sans GB', 'STHeiti', 'Arial Unicode MS']
 rcParams['axes.unicode_minus'] = False
 
-fig, ax = plt.subplots(figsize=(18, 11.5), dpi=150)
+fig, ax = plt.subplots(figsize=(18, 10), dpi=150)
 ax.set_xlim(0, 18)
-ax.set_ylim(0, 11.5)
+ax.set_ylim(0, 10)
 ax.axis('off')
 
 # 配色
 C_TITLE = '#1a2238'
-C_S1 = '#2E86AB'      # 树立标杆 - 深蓝
-C_S2 = '#A23B72'      # 标准化场景 - 紫红
-C_S3 = '#F18F01'      # 规模复制 - 橙
-C_BG1 = '#E8F1F8'
-C_BG2 = '#F5E6EE'
-C_BG3 = '#FDF1DD'
-C_AXIS = '#5C6B7A'    # 主轴灰
-C_AXIS_BG = '#EEF1F5'
 C_GOAL = '#0B6E4F'
 C_GOAL_BG = '#E1F0E8'
+# 五条原理各自配色
+COLORS = ['#2E86AB', '#A23B72', '#F18F01', '#3B8C6E', '#6A4C93']
+BG = ['#E8F1F8', '#F5E6EE', '#FDF1DD', '#E4F0EA', '#ECE6F2']
 
 # === 标题 ===
-ax.text(9, 10.95, '行业智能化第一性原理', fontsize=28, fontweight='bold',
+ax.text(9, 9.5, '行业智能化第一性原理', fontsize=30, fontweight='bold',
         ha='center', va='center', color=C_TITLE)
-ax.text(9, 10.4, '先树立标杆  →  再标准化场景  →  最后规模复制',
+ax.text(9, 8.9, '剥离行业外壳后，任何智能化项目都绕不过的五条底层规律',
         fontsize=15, ha='center', va='center', color='#555', style='italic')
 
-# === 三阶段大容器 ===
-def stage_box(x, y, w, h, color_bg, color_edge):
-    box = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08,rounding_size=0.2",
-                         linewidth=2.5, edgecolor=color_edge, facecolor=color_bg, alpha=0.95)
-    ax.add_patch(box)
+# === 五条原理卡片 ===
+principles = [
+    ('1', '价值守恒', '正 ROI 是底线',
+     '被替代成本 + 新红利\n>\n推理 + 部署 + 变革成本'),
+    ('2', '行业知识密度', '模型是地板·SOP 是天花板',
+     '行业级智能体 =\n通用大模型 ×\n行业知识密度\n（本体论 / Skill / 语料）'),
+    ('3', '标杆-规模化路径', '先打灯塔·再批量复制',
+     'PoC（验可行）\n→ 灯塔（验 ROI）\n→ 规模复制（验产业化）'),
+    ('4', '场景可批量复制', '标准化即规模化',
+     '抽象成标准模板\n在行业中\n可重复落地'),
+    ('5', '边际成本递减', '第 N 次部署趋近零',
+     '1 次开发\n服务 1000 客户\n→ 应用层 ×100 价值'),
+]
 
-stage_box(0.4, 3.4, 6.0, 6.4, C_BG1, C_S1)
-stage_box(6.7, 3.4, 4.6, 6.4, C_BG2, C_S2)
-stage_box(11.6, 3.4, 5.95, 6.4, C_BG3, C_S3)
+n = len(principles)
+margin = 0.5
+gap = 0.38
+card_w = (18 - 2 * margin - (n - 1) * gap) / n   # ≈ 3.1
+card_h = 4.7
+card_y = 2.7
 
-# 阶段标题
-ax.text(3.4, 9.35, '① 先树立标杆', fontsize=20, fontweight='bold', ha='center', color=C_S1)
-ax.text(3.4, 8.85, '跑通单点 · 打造灯塔', fontsize=12, ha='center', color='#444')
-
-ax.text(9.0, 9.35, '② 再标准化场景', fontsize=20, fontweight='bold', ha='center', color=C_S2)
-ax.text(9.0, 8.85, '抽象模板 · 打开复制空间', fontsize=12, ha='center', color='#444')
-
-ax.text(14.575, 9.35, '③ 最后规模复制', fontsize=20, fontweight='bold', ha='center', color=C_S3)
-ax.text(14.575, 8.85, '边际归零 · 释放规模红利', fontsize=12, ha='center', color='#444')
-
-# === 原理卡片 ===
-def principle_card(x, y, w, h, num, title, subtitle, color):
-    card = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.04,rounding_size=0.13",
-                          linewidth=1.8, edgecolor=color, facecolor='white')
+for i, (num, title, sub, body) in enumerate(principles):
+    x = margin + i * (card_w + gap)
+    color = COLORS[i]
+    # 卡片
+    card = FancyBboxPatch((x, card_y), card_w, card_h,
+                          boxstyle="round,pad=0.04,rounding_size=0.13",
+                          linewidth=2.2, edgecolor=color, facecolor=BG[i])
     ax.add_patch(card)
-    circle = mpatches.Circle((x + 0.45, y + h - 0.42), 0.30, facecolor=color, edgecolor='none', zorder=3)
-    ax.add_patch(circle)
-    ax.text(x + 0.45, y + h - 0.42, num, fontsize=14, fontweight='bold',
+    # 顶部色条
+    ax.add_patch(FancyBboxPatch((x, card_y + card_h - 0.12), card_w, 0.12,
+                 boxstyle="round,pad=0.0,rounding_size=0.05",
+                 linewidth=0, facecolor=color))
+    # 编号圆
+    cx, cy = x + 0.5, card_y + card_h - 0.6
+    ax.add_patch(mpatches.Circle((cx, cy), 0.32, facecolor=color, edgecolor='none', zorder=3))
+    ax.text(cx, cy, num, fontsize=16, fontweight='bold',
             ha='center', va='center', color='white', zorder=4)
-    ax.text(x + w/2 + 0.18, y + h - 0.42, title, fontsize=13, fontweight='bold',
+    # 标题
+    ax.text(x + card_w / 2 + 0.18, cy, title, fontsize=15, fontweight='bold',
             ha='center', va='center', color=color)
-    ax.text(x + w/2, y + 0.4, subtitle, fontsize=10.5, ha='center', va='center', color='#333')
+    # 副标题
+    ax.text(x + card_w / 2, card_y + card_h - 1.25, sub, fontsize=11,
+            ha='center', va='center', color='#333', fontweight='bold')
+    # 正文公式块
+    inner = FancyBboxPatch((x + 0.22, card_y + 0.4), card_w - 0.44, 2.55,
+                           boxstyle="round,pad=0.04,rounding_size=0.1",
+                           linewidth=1, edgecolor=color, facecolor='white')
+    ax.add_patch(inner)
+    ax.text(x + card_w / 2, card_y + 0.4 + 2.55 / 2, body, fontsize=10.5,
+            ha='center', va='center', color='#222', linespacing=1.5)
 
-# 阶段一：3 个原理
-principle_card(0.75, 7.0, 5.3, 1.25, '1', '价值守恒', '正 ROI 是底线', C_S1)
-principle_card(0.75, 5.55, 5.3, 1.25, '2', '数据流喂养', '数据是燃料 · 实时可调度', C_S1)
-principle_card(0.75, 4.10, 5.3, 1.25, '3', '行业知识密度', 'Skill / SOP 是灵魂', C_S1)
-
-# 阶段二：1 个原理（卡片做大、居中）
-principle_card(7.0, 5.6, 4.0, 1.7, '4', '场景可批量复制',
-               '标准化即规模化\n抽象成模板\n跨企业可重复落地', C_S2)
-
-# 阶段三：1 个原理
-principle_card(11.95, 5.6, 5.25, 1.7, '5', '边际成本递减',
-               '第 N 次部署趋近零成本\nSkill 复用率 > 70%\n释放产业级规模红利', C_S3)
-
-# === 阶段输出（每个阶段底部的产出标签）===
-def output_tag(x, y, w, text, color):
-    tag = FancyBboxPatch((x, y), w, 0.55, boxstyle="round,pad=0.02,rounding_size=0.1",
-                         linewidth=1.5, edgecolor=color, facecolor='white')
-    ax.add_patch(tag)
-    ax.text(x + w/2, y + 0.275, text, fontsize=11, fontweight='bold',
-            ha='center', va='center', color=color)
-
-output_tag(1.2, 3.65, 4.4, '产出：灯塔标杆项目', C_S1)
-output_tag(7.2, 3.65, 3.6, '产出：标准模板 / Skill 库', C_S2)
-output_tag(12.3, 3.65, 4.55, '产出：规模化复制曲线', C_S3)
-
-# === 阶段间箭头 ===
-def stage_arrow(x1, x2, y, color):
-    arrow = FancyArrowPatch((x1, y), (x2, y),
-                            arrowstyle='-|>', mutation_scale=30,
-                            linewidth=4, color=color)
-    ax.add_patch(arrow)
-
-stage_arrow(6.35, 6.75, 6.3, '#888')
-stage_arrow(11.25, 11.65, 6.3, '#888')
-
-# === 贯穿三阶段的主轴：原理 6 ===
-axis_box = FancyBboxPatch((0.4, 1.95), 17.15, 1.05,
-                          boxstyle="round,pad=0.04,rounding_size=0.18",
-                          linewidth=2, edgecolor=C_AXIS, facecolor=C_AXIS_BG)
-ax.add_patch(axis_box)
-
-# 原理6 编号圆
-circle6 = mpatches.Circle((1.0, 2.475), 0.34, facecolor=C_AXIS, edgecolor='none', zorder=3)
-ax.add_patch(circle6)
-ax.text(1.0, 2.475, '6', fontsize=15, fontweight='bold',
-        ha='center', va='center', color='white', zorder=4)
-
-ax.text(1.55, 2.78, '原理 6 · 标杆-规模化路径（贯穿主轴）',
-        fontsize=13, fontweight='bold', va='center', color=C_AXIS)
-ax.text(1.55, 2.20, 'PoC（验证可行性） →  灯塔（验证 ROI） →  同心圆复制 →  产业化规模',
-        fontsize=11.5, va='center', color='#333')
-
-# 三个阶段到主轴的虚线
-for sx in [3.4, 9.0, 14.575]:
-    arr = FancyArrowPatch((sx, 3.4), (sx, 3.05),
-                          arrowstyle='-|>', mutation_scale=16,
-                          linewidth=1.3, color='#888', linestyle='--')
+# === 五条 → 终局的汇聚箭头 ===
+for i in range(n):
+    x = margin + i * (card_w + gap) + card_w / 2
+    arr = FancyArrowPatch((x, card_y - 0.05), (9, 1.95),
+                          arrowstyle='-|>', mutation_scale=14,
+                          linewidth=1.1, color='#999', linestyle='--',
+                          connectionstyle="arc3,rad=0.0")
     ax.add_patch(arr)
 
 # === 底部产业终局条 ===
-goal_box = FancyBboxPatch((0.4, 0.45), 17.15, 1.2,
+goal_box = FancyBboxPatch((2.0, 0.5), 14.0, 1.4,
                           boxstyle="round,pad=0.05,rounding_size=0.2",
                           linewidth=2.5, edgecolor=C_GOAL, facecolor=C_GOAL_BG)
 ax.add_patch(goal_box)
-ax.text(9, 1.30, '倒金字塔产业终局：应用层捕获 100 倍价值',
-        fontsize=17, fontweight='bold', ha='center', va='center', color=C_GOAL)
-ax.text(9, 0.75, '硬件 ×1   →   模型 ×10   →   行业应用 ×100',
-        fontsize=12, ha='center', va='center', color='#444')
+ax.text(9, 1.42, '倒金字塔产业终局：应用层捕获 100 倍价值',
+        fontsize=18, fontweight='bold', ha='center', va='center', color=C_GOAL)
+ax.text(9, 0.85, '硬件 ×1     →     模型 ×10     →     行业应用 ×100',
+        fontsize=13, ha='center', va='center', color='#444')
 
-# 主轴指向产业终局
-arr_main = FancyArrowPatch((9, 1.95), (9, 1.65),
-                           arrowstyle='-|>', mutation_scale=20,
-                           linewidth=1.8, color=C_AXIS)
-ax.add_patch(arr_main)
-
-# === 右下角署名 ===
-ax.text(17.55, 0.12, '行业智能化项目方法论 · 2026',
-        fontsize=8.5, ha='right', va='bottom', color='#999', style='italic')
+# === 署名 ===
+ax.text(17.55, 0.12, '行业智能化发展第一性原理 · 2026',
+        fontsize=9, ha='right', va='bottom', color='#999', style='italic')
 
 plt.tight_layout()
 output_path = '/Users/apple/Future_Thoughts/行业智能化第一性原理.jpg'
