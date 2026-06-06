@@ -10,7 +10,8 @@
       "WebFetch(domain:www.anthropic.com)",
       "WebFetch(domain:red.anthropic.com)",
       "WebFetch(domain:artificialintelligenceact.eu)",
-      "WebFetch(domain:www.resultsense.com)"
+      "WebFetch(domain:www.resultsense.com)",
+      "WebFetch(domain:blogs.microsoft.com)"
     ]
   }
 }
