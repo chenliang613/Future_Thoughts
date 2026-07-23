@@ -11,7 +11,8 @@
       "WebFetch(domain:red.anthropic.com)",
       "WebFetch(domain:artificialintelligenceact.eu)",
       "WebFetch(domain:www.resultsense.com)",
-      "WebFetch(domain:blogs.microsoft.com)"
+      "WebFetch(domain:blogs.microsoft.com)",
+      "WebFetch(domain:www.constellationr.com)"
     ]
   }
 }
